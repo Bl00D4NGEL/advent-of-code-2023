@@ -1,4 +1,4 @@
-use std::{collections::HashMap, time::SystemTime};
+use std::collections::HashMap;
 
 fn main() {
     let contents = include_str!("./input.txt");
@@ -60,8 +60,6 @@ fn main() {
         existing_copies.insert(i, 1);
     }
 
-    let now = SystemTime::now();
-
     for card_number in 1..=(rounds.values().len() as u32) {
         for _ in 1..=*existing_copies.get(&card_number).unwrap_or(&1) {
             if let Some(copies_won) = rounds.get(&card_number) {
@@ -77,17 +75,6 @@ fn main() {
         }
     }
     let sum = existing_copies.values().sum::<i32>();
-
-    match now.elapsed() {
-        Ok(elapsed) => {
-            // it prints '2'
-            println!("{}", elapsed.as_millis());
-        }
-        Err(e) => {
-            // an error occurred!
-            println!("Error: {e:?}");
-        }
-    }
     dbg!(sum);
     dbg!(result);
 }
