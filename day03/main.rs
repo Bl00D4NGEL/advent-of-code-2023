@@ -123,7 +123,7 @@ fn main() {
             let mut c = values.clone();
             c.sort();
             c.dedup();
-            if c.len() < 2 {
+            if c.len() != 2 {
                 return 0;
             }
             c.iter()
