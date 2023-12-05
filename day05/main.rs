@@ -1,3 +1,4 @@
+use rayon::prelude::*;
 use std::collections::HashMap;
 
 type SourceNumberStart = u64;
@@ -59,26 +60,47 @@ fn main() {
         current_map.push((source_start, destination_start, range_length));
     }
 
-    let locations = seeds.into_iter().map(|seed| {
-        let mut seed_number = seed;
-
-        for map_name in &map_order {
-            let ranges = maps.get(map_name).unwrap();
-
-            for (source_start, destination_start, range_length) in ranges {
-                let source_end = source_start + range_length;
-                if seed_number <= source_end && seed_number >= *source_start {
-                    let new_seed = destination_start + seed_number - source_start;
-                    seed_number = new_seed;
-                    break;
-                }
-            }
-        }
-
-        seed_number
-    });
+    let locations = seeds
+        .iter()
+        .map(|seed| determine_final_seed_number(*seed, &map_order, &maps));
 
     let result = locations.min();
 
     dbg!(result);
+
+    let mut seed_chunks = seeds.chunks(2);
+    let mut mins = vec![];
+    while let Some([start_seed, length]) = seed_chunks.next() {
+        let minimum_for_range = (*start_seed..(*start_seed + *length))
+            .into_par_iter()
+            .map(|seed| determine_final_seed_number(seed, &map_order, &maps))
+            .min();
+
+        mins.push(minimum_for_range);
+    }
+
+    dbg!(mins.iter().min());
+}
+
+fn determine_final_seed_number(
+    initial_seed: u64,
+    map_order: &Vec<&str>,
+    maps: &HashMap<&str, Vec<(SourceNumberStart, DestinationNumberStart, RangeLength)>>,
+) -> u64 {
+    let mut seed_number = initial_seed;
+
+    for map_name in map_order {
+        let ranges = maps.get(map_name).unwrap();
+
+        for (source_start, destination_start, range_length) in ranges {
+            let source_end = source_start + range_length;
+            if seed_number < source_end && seed_number >= *source_start {
+                let new_seed = destination_start + seed_number - source_start;
+                seed_number = new_seed;
+                break;
+            }
+        }
+    }
+
+    seed_number
 }
