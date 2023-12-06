@@ -5,6 +5,22 @@ type SourceNumberStart = u64;
 type DestinationNumberStart = u64;
 type RangeLength = u64;
 
+struct SeedConversionMap {
+    from: u64,
+    to: u64,
+    size: u64,
+}
+
+impl SeedConversionMap {
+    fn convert(&self, seed: u64) -> Result<u64, ()> {
+        if seed >= self.from && seed < self.from + self.size {
+            Ok(self.to + seed - self.from)
+        } else {
+            Err(())
+        }
+    }
+}
+
 fn main() {
     let contents = include_str!("./input.txt");
     let mut lines = contents.split('\n');
@@ -18,8 +34,7 @@ fn main() {
         .filter_map(|c| c.parse::<u64>().ok())
         .collect::<Vec<u64>>();
 
-    let mut maps: HashMap<&str, Vec<(SourceNumberStart, DestinationNumberStart, RangeLength)>> =
-        HashMap::new();
+    let mut maps: HashMap<&str, Vec<SeedConversionMap>> = HashMap::new();
     let mut current_map_name = "";
     let mut map_order = vec![];
     for line in lines {
@@ -57,7 +72,11 @@ fn main() {
         let source_start = *split.get(1).unwrap();
         let range_length = *split.get(2).unwrap();
 
-        current_map.push((source_start, destination_start, range_length));
+        current_map.push(SeedConversionMap {
+            from: source_start,
+            to: destination_start,
+            size: range_length,
+        });
     }
 
     let locations = seeds
@@ -85,18 +104,17 @@ fn main() {
 fn determine_final_seed_number(
     initial_seed: u64,
     map_order: &Vec<&str>,
-    maps: &HashMap<&str, Vec<(SourceNumberStart, DestinationNumberStart, RangeLength)>>,
+    maps: &HashMap<&str, Vec<SeedConversionMap>>,
 ) -> u64 {
     let mut seed_number = initial_seed;
 
     for map_name in map_order {
         let ranges = maps.get(map_name).unwrap();
 
-        for (source_start, destination_start, range_length) in ranges {
-            let source_end = source_start + range_length;
-            if seed_number < source_end && seed_number >= *source_start {
-                let new_seed = destination_start + seed_number - source_start;
+        for conversion_map in ranges {
+            if let Ok(new_seed) = conversion_map.convert(seed_number) {
                 seed_number = new_seed;
+
                 break;
             }
         }
