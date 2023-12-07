@@ -1,10 +1,6 @@
 use rayon::prelude::*;
 use std::collections::HashMap;
 
-type SourceNumberStart = u64;
-type DestinationNumberStart = u64;
-type RangeLength = u64;
-
 struct SeedConversionMap {
     from: u64,
     to: u64,
