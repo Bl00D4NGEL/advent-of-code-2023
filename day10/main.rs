@@ -1,7 +1,7 @@
 use std::fmt::Debug;
 
 fn main() {
-    let contents = include_str!("./example.txt");
+    let contents = include_str!("./input.txt");
     dbg!(part_1(contents));
     dbg!(part_2(contents));
 }
@@ -54,34 +54,61 @@ fn part_1(contents: &str) -> usize {
 
     dbg!(&start_position);
 
-    if let Some((x, y)) = start_position {
-        let current_pipe = grid.get_field(x, y).unwrap().clone();
-
-        let adjacent_pipes = vec![
-            (grid.north_of(x, y), Direction::North),
-            (grid.south_of(x, y), Direction::South),
-            (grid.east_of(x, y), Direction::East),
-            (grid.west_of(x, y), Direction::West),
-        ];
-        let connections = adjacent_pipes
-            .iter()
-            .filter_map(|(p, d)| match p {
-                None => None,
-                Some(pipe) => {
-                    if current_pipe.value.connects_to(pipe.value, *d) {
-                        Some((pipe, d))
-                    } else {
-                        None
-                    }
-                }
-            })
-            .collect::<Vec<(&&Field<PipeType>, &Direction)>>();
-
-        dbg!(current_pipe, connections);
-        1
-    } else {
+    if start_position.is_none() {
         panic!("Could not determine starting position");
     }
+
+    let (mut current_x, mut current_y) = start_position.unwrap();
+    let mut loop_pipes: Vec<(usize, usize)> = vec![(current_x, current_y)];
+
+    loop {
+        let connections = find_adjacent_connections(&grid, current_x, current_y);
+
+        if connections.len() == 2 {
+            let mut added_loop_pipes = false;
+
+            for connection in connections.iter() {
+                let has_connection = loop_pipes
+                    .iter()
+                    .any(|(x, y)| *x == connection.x && *y == connection.y);
+
+                if !has_connection {
+                    added_loop_pipes = true;
+                    loop_pipes.push((connection.x, connection.y));
+                    current_x = connection.x;
+                    current_y = connection.y;
+                    break;
+                }
+            }
+
+            if !added_loop_pipes {
+                println!("Loop already has first AND last.. stopping");
+                break;
+            }
+        } else {
+            println!("End? {:?}", connections);
+            break;
+        }
+    }
+
+    dbg!(loop_pipes.len());
+
+    (loop_pipes.len() + loop_pipes.len() % 2) / 2
+}
+
+fn find_adjacent_connections(grid: &Grid<PipeType>, x: usize, y: usize) -> Vec<&Field<PipeType>> {
+    let current_pipe = grid.get_field(x, y).unwrap().clone();
+
+    let adjacent_pipes = vec![
+        (grid.north_of(x, y), Direction::North),
+        (grid.south_of(x, y), Direction::South),
+        (grid.east_of(x, y), Direction::East),
+        (grid.west_of(x, y), Direction::West),
+    ];
+    adjacent_pipes
+        .into_iter()
+        .filter_map(|(p, d)| p.filter(|&pipe| current_pipe.value.connects_to(pipe.value, d)))
+        .collect()
 }
 
 #[derive(Debug, Clone)]
@@ -153,83 +180,87 @@ impl PipeType {
     fn connects_to(&self, other_pipe: PipeType, direction: Direction) -> bool {
         match self {
             PipeType::Ground => false,
-            PipeType::StartingPosition => match (direction, other_pipe) {
-                (Direction::North, PipeType::Vertical) => true,
-                (Direction::North, PipeType::SouthEast) => true,
-                (Direction::North, PipeType::SouthWest) => true,
-                (Direction::South, PipeType::Vertical) => true,
-                (Direction::South, PipeType::NorthEast) => true,
-                (Direction::South, PipeType::NorthWest) => true,
-                (Direction::East, PipeType::Horizontal) => true,
-                (Direction::East, PipeType::NorthWest) => true,
-                (Direction::East, PipeType::SouthWest) => true,
-                (Direction::West, PipeType::Horizontal) => true,
-                (Direction::West, PipeType::NorthEast) => true,
-                (Direction::West, PipeType::SouthEast) => true,
-                _ => false,
-            },
-            PipeType::Vertical => match (direction, other_pipe) {
-                (Direction::North, PipeType::SouthEast) => true,
-                (Direction::North, PipeType::SouthWest) => true,
-                (Direction::North, PipeType::StartingPosition) => true,
-                (Direction::South, PipeType::NorthEast) => true,
-                (Direction::South, PipeType::NorthWest) => true,
-                (Direction::South, PipeType::StartingPosition) => true,
-                _ => false,
-            },
-            PipeType::Horizontal => match (direction, other_pipe) {
-                (Direction::West, PipeType::SouthEast) => true,
-                (Direction::West, PipeType::NorthEast) => true,
-                (Direction::West, PipeType::StartingPosition) => true,
-                (Direction::East, PipeType::SouthWest) => true,
-                (Direction::East, PipeType::NorthWest) => true,
-                (Direction::East, PipeType::StartingPosition) => true,
-                _ => false,
-            },
-            PipeType::NorthEast => match (direction, other_pipe) {
-                (Direction::North, PipeType::Vertical) => true,
-                (Direction::North, PipeType::SouthEast) => true,
-                (Direction::North, PipeType::SouthWest) => true,
-                (Direction::North, PipeType::StartingPosition) => true,
-                (Direction::East, PipeType::Horizontal) => true,
-                (Direction::East, PipeType::NorthWest) => true,
-                (Direction::East, PipeType::SouthWest) => true,
-                (Direction::East, PipeType::StartingPosition) => true,
-                _ => false,
-            },
-            PipeType::NorthWest => match (direction, other_pipe) {
-                (Direction::North, PipeType::Vertical) => true,
-                (Direction::North, PipeType::SouthEast) => true,
-                (Direction::North, PipeType::SouthWest) => true,
-                (Direction::North, PipeType::StartingPosition) => true,
-                (Direction::West, PipeType::Horizontal) => true,
-                (Direction::West, PipeType::NorthEast) => true,
-                (Direction::West, PipeType::SouthEast) => true,
-                (Direction::West, PipeType::StartingPosition) => true,
-                _ => false,
-            },
-            PipeType::SouthWest => match (direction, other_pipe) {
-                (Direction::South, PipeType::Vertical) => true,
-                (Direction::South, PipeType::NorthEast) => true,
-                (Direction::South, PipeType::NorthWest) => true,
-                (Direction::South, PipeType::StartingPosition) => true,
-                (Direction::West, PipeType::Horizontal) => true,
-                (Direction::West, PipeType::NorthEast) => true,
-                (Direction::West, PipeType::SouthEast) => true,
-                (Direction::West, PipeType::StartingPosition) => true,
-                _ => false,
-            },
-            PipeType::SouthEast => match (direction, other_pipe) {
-                (Direction::South, PipeType::Vertical) => true,
-                (Direction::South, PipeType::NorthEast) => true,
-                (Direction::South, PipeType::NorthWest) => true,
-                (Direction::South, PipeType::StartingPosition) => true,
-                (Direction::East, PipeType::Horizontal) => true,
-                (Direction::East, PipeType::SouthWest) => true,
-                (Direction::East, PipeType::NorthWest) => true,
-                (Direction::East, PipeType::StartingPosition) => true,
-                _ => false,
-            },
+            PipeType::StartingPosition => matches!(
+                (direction, other_pipe),
+                (Direction::North, PipeType::Vertical)
+                    | (Direction::North, PipeType::SouthEast)
+                    | (Direction::North, PipeType::SouthWest)
+                    | (Direction::South, PipeType::Vertical)
+                    | (Direction::South, PipeType::NorthEast)
+                    | (Direction::South, PipeType::NorthWest)
+                    | (Direction::East, PipeType::Horizontal)
+                    | (Direction::East, PipeType::NorthWest)
+                    | (Direction::East, PipeType::SouthWest)
+                    | (Direction::West, PipeType::Horizontal)
+                    | (Direction::West, PipeType::NorthEast)
+                    | (Direction::West, PipeType::SouthEast)
+            ),
+            PipeType::Vertical => matches!(
+                (direction, other_pipe),
+                (Direction::North, PipeType::Vertical)
+                    | (Direction::North, PipeType::SouthEast)
+                    | (Direction::North, PipeType::SouthWest)
+                    | (Direction::North, PipeType::StartingPosition)
+                    | (Direction::South, PipeType::Vertical)
+                    | (Direction::South, PipeType::NorthEast)
+                    | (Direction::South, PipeType::NorthWest)
+                    | (Direction::South, PipeType::StartingPosition)
+            ),
+            PipeType::Horizontal => matches!(
+                (direction, other_pipe),
+                (Direction::West, PipeType::Horizontal)
+                    | (Direction::West, PipeType::SouthEast)
+                    | (Direction::West, PipeType::NorthEast)
+                    | (Direction::West, PipeType::StartingPosition)
+                    | (Direction::East, PipeType::Horizontal)
+                    | (Direction::East, PipeType::SouthWest)
+                    | (Direction::East, PipeType::NorthWest)
+                    | (Direction::East, PipeType::StartingPosition)
+            ),
+            PipeType::NorthEast => matches!(
+                (direction, other_pipe),
+                (Direction::North, PipeType::Vertical)
+                    | (Direction::North, PipeType::SouthEast)
+                    | (Direction::North, PipeType::SouthWest)
+                    | (Direction::North, PipeType::StartingPosition)
+                    | (Direction::East, PipeType::Horizontal)
+                    | (Direction::East, PipeType::NorthWest)
+                    | (Direction::East, PipeType::SouthWest)
+                    | (Direction::East, PipeType::StartingPosition)
+            ),
+            PipeType::NorthWest => matches!(
+                (direction, other_pipe),
+                (Direction::North, PipeType::Vertical)
+                    | (Direction::North, PipeType::SouthEast)
+                    | (Direction::North, PipeType::SouthWest)
+                    | (Direction::North, PipeType::StartingPosition)
+                    | (Direction::West, PipeType::Horizontal)
+                    | (Direction::West, PipeType::NorthEast)
+                    | (Direction::West, PipeType::SouthEast)
+                    | (Direction::West, PipeType::StartingPosition)
+            ),
+            PipeType::SouthWest => matches!(
+                (direction, other_pipe),
+                (Direction::South, PipeType::Vertical)
+                    | (Direction::South, PipeType::NorthEast)
+                    | (Direction::South, PipeType::NorthWest)
+                    | (Direction::South, PipeType::StartingPosition)
+                    | (Direction::West, PipeType::Horizontal)
+                    | (Direction::West, PipeType::NorthEast)
+                    | (Direction::West, PipeType::SouthEast)
+                    | (Direction::West, PipeType::StartingPosition)
+            ),
+            PipeType::SouthEast => matches!(
+                (direction, other_pipe),
+                (Direction::South, PipeType::Vertical)
+                    | (Direction::South, PipeType::NorthEast)
+                    | (Direction::South, PipeType::NorthWest)
+                    | (Direction::South, PipeType::StartingPosition)
+                    | (Direction::East, PipeType::Horizontal)
+                    | (Direction::East, PipeType::SouthWest)
+                    | (Direction::East, PipeType::NorthWest)
+                    | (Direction::East, PipeType::StartingPosition)
+            ),
             _ => false,
         }
     }
