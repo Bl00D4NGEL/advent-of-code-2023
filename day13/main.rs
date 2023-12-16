@@ -1,7 +1,5 @@
 fn main() {
     let contents = include_str!("./input.txt");
-    // 28237 too low
-    // 33337 too high
     dbg!(part_1(contents));
     dbg!(part_2(contents));
 }
