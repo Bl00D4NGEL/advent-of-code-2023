@@ -104,7 +104,57 @@ fn move_in_grid(
 }
 
 fn part_2(contents: &str) -> usize {
-    1
+    let rows = contents
+        .lines()
+        .rev()
+        .map(|line| line.chars().map(FieldType::from).collect())
+        .collect::<Vec<Vec<FieldType>>>();
+
+    let grid = Grid::from(rows);
+
+    let mut configurations = vec![];
+    let row_len = grid.rows.len();
+    let col_len = grid.rows.first().unwrap().len();
+    for y in 0..row_len {
+        for x in 0..col_len {
+            if x == 0 {
+                configurations.push((Direction::East, Position { x, y }));
+            }
+            if x == col_len - 1 {
+                configurations.push((Direction::West, Position { x, y }));
+            }
+            if y == 0 {
+                configurations.push((Direction::North, Position { x, y }));
+            }
+            if y == col_len - 1 {
+                configurations.push((Direction::South, Position { x, y }));
+            }
+        }
+    }
+
+    let configurations_count = configurations.len();
+    configurations
+        .into_iter()
+        .enumerate()
+        .map(|(idx, (direction, position))| {
+            if idx % 10 == 0 {
+                println!("{idx} / {configurations_count}");
+            }
+            let mut energized = vec![];
+
+            move_in_grid(&grid, direction, position, &mut energized);
+
+            let mut positions = energized
+                .iter()
+                .map(|(_, pos)| pos)
+                .collect::<Vec<&Position>>();
+            positions.sort();
+            positions.dedup();
+
+            positions.len()
+        })
+        .max()
+        .unwrap()
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, PartialOrd, Ord)]
