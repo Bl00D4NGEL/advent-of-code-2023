@@ -1,10 +1,10 @@
 pub struct Day16;
 
-use crate::solver::{PartOneSolver, PartTwoSolver};
+use crate::solver::{Solver, SolvingError};
 use crate::utils::{Direction, Grid, Position};
 
-impl PartOneSolver<usize> for Day16 {
-    fn solve(&self, contents: &str) -> Result<usize, ()> {
+impl Solver<usize, SolvingError> for Day16 {
+    fn part_1(&self, contents: &str) -> Result<usize, SolvingError> {
         let rows = contents
             .lines()
             .rev()
@@ -28,10 +28,8 @@ impl PartOneSolver<usize> for Day16 {
 
         Ok(positions.len())
     }
-}
 
-impl PartTwoSolver<usize> for Day16 {
-    fn solve(&self, contents: &str) -> Result<usize, ()> {
+    fn part_2(&self, contents: &str) -> Result<usize, SolvingError> {
         let rows = contents
             .lines()
             .rev()

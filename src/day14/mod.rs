@@ -1,63 +1,63 @@
 use std::{cmp::Ordering, str::Lines};
 
-fn main() {
-    let contents = include_str!("./example.txt");
-    dbg!(part_1(contents));
-    dbg!(part_2(contents));
-}
+use crate::solver::{Solver, SolvingError};
 
-fn part_1(contents: &str) -> usize {
-    let lines = contents.lines();
+pub struct Day14 {}
 
-    let rows = parse_lines(lines);
+impl Solver<usize, SolvingError> for Day14 {
+    fn part_1(&self, contents: &str) -> Result<usize, SolvingError> {
+        let lines = contents.lines();
 
-    let columns = rows_to_columns(rows);
+        let rows = parse_lines(lines);
 
-    let col_len = columns.len();
-    columns
-        .iter()
-        .map(|column| {
-            let mut chunks = vec![];
-            let mut chunk: Vec<&Field> = vec![];
-            for field in column.iter() {
-                chunk.push(field);
-                if field.to_owned().eq(&Field::CubeRock) {
-                    chunks.push(tilt_north(&mut chunk));
-                    chunk = vec![];
-                }
-            }
-            chunks.push(tilt_north(&mut chunk));
+        let columns = rows_to_columns(rows);
 
-            chunks.into_iter().flatten().collect::<Vec<&Field>>()
-        })
-        .map(|column| {
-            column
-                .iter()
-                .enumerate()
-                .map(|(idx, field)| {
-                    if field.eq(&&Field::RoundRock) {
-                        col_len - idx
-                    } else {
-                        0
+        let col_len = columns.len();
+        Ok(columns
+            .iter()
+            .map(|column| {
+                let mut chunks = vec![];
+                let mut chunk: Vec<&Field> = vec![];
+                for field in column.iter() {
+                    chunk.push(field);
+                    if field.to_owned().eq(&Field::CubeRock) {
+                        chunks.push(tilt_north(&mut chunk));
+                        chunk = vec![];
                     }
-                })
-                .sum::<usize>()
-        })
-        .sum()
-}
+                }
+                chunks.push(tilt_north(&mut chunk));
 
-fn part_2(contents: &str) -> usize {
-    let lines = contents.lines();
-
-    let initial_rows = parse_lines(lines);
-
-    let mut rows = initial_rows;
-
-    for i in 0..1_000_000_000 {
-        let columns = rows;
-        rows = cycle_grid(columns);
+                chunks.into_iter().flatten().collect::<Vec<&Field>>()
+            })
+            .map(|column| {
+                column
+                    .iter()
+                    .enumerate()
+                    .map(|(idx, field)| {
+                        if field.eq(&&Field::RoundRock) {
+                            col_len - idx
+                        } else {
+                            0
+                        }
+                    })
+                    .sum::<usize>()
+            })
+            .sum())
     }
-    1
+
+    fn part_2(&self, contents: &str) -> Result<usize, SolvingError> {
+        let lines = contents.lines();
+
+        let initial_rows = parse_lines(lines);
+
+        let mut rows = initial_rows;
+
+        for i in 0..1_000_000_000 {
+            let columns = rows;
+            rows = cycle_grid(columns);
+        }
+        Err(SolvingError::NotImplemented)
+    }
 }
 
 fn cycle_grid(grid: Vec<Vec<&Field>>) -> Vec<Vec<&Field>> {

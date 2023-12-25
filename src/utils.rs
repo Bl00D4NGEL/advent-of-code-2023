@@ -130,6 +130,30 @@ impl<T> Grid<T> {
 
         self.get_field(new_position)
     }
+
+    pub fn south_west_of(&self, position: Position) -> Option<&Field<T>> {
+        let new_position = position.move_to(Direction::South)?;
+
+        self.get_field(new_position.move_to(Direction::West)?)
+    }
+
+    pub fn south_east_of(&self, position: Position) -> Option<&Field<T>> {
+        let new_position = position.move_to(Direction::South)?;
+
+        self.get_field(new_position.move_to(Direction::East)?)
+    }
+
+    pub fn north_west_of(&self, position: Position) -> Option<&Field<T>> {
+        let new_position = position.move_to(Direction::North)?;
+
+        self.get_field(new_position.move_to(Direction::West)?)
+    }
+
+    pub fn north_east_of(&self, position: Position) -> Option<&Field<T>> {
+        let new_position = position.move_to(Direction::North)?;
+
+        self.get_field(new_position.move_to(Direction::East)?)
+    }
 }
 
 impl<T> Field<T> {
