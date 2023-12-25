@@ -1,3 +1,5 @@
+pub mod day01;
+
 fn main() {
     let contents = include_str!("./input.txt");
     let lines = contents.split('\n');
